@@ -9,6 +9,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 #LATENCY = Gauge('http_request_latency_seconds', 'HTTP Request Latency')
 
 app = Flask(__name__)
+
 metrics = PrometheusMetrics(app)
 app.register_blueprint(healthz, url_prefix="/healthz")
 
@@ -16,14 +17,14 @@ def liveness():
     try:
         return 'liveness - OK'
     except Exception:
-        raise HealthError("Can't connect to the file")
+        raise HealthError("liveness - NO")
 
 def readiness():
     try:
         return 'readiness - OK'
         #connect_database()
     except Exception:
-        raise HealthError("Can't connect to the file")
+        raise HealthError("readiness - NO")
 
 app.config.update(
     HEALTHZ = {
@@ -34,7 +35,6 @@ app.config.update(
 
 @app.route("/")
 def hello():
-    Counter('http_requests_total', 'Total HTTP Requests').inc()
     return "Hello World!"
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ COPY requirements.txt .
 
 RUN \
     pip install --no-cache-dir -r requirements.txt
-#    pip3 install prometheus-client
 
 #COPY app.py .
 
