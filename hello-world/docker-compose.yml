@@ -8,11 +8,15 @@ services:
       dockerfile: Dockerfile
     image: app:latest
     container_name: app
-    environment:
-      APP_PORT: 5000
     ports:
       - "5000:5000"
       - "8000:8000"
+    healthcheck:
+      test: curl --fail http://app:5000/healthz/ready || exit 1
+      interval: 5s
+      retries: 10
+      start_period: 5s
+      timeout: 5s
     volumes:
       - ./app/app.py:/app/app.py
     networks:
@@ -33,7 +37,8 @@ services:
       - front
       - back
     depends_on:
-      - app
+      app:
+        condition: service_healthy
 
 
   prometheus:
