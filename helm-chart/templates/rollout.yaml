@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    release: {{ .Release.Name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app: {{ template "chart-name-service.name" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      app: {{ template "chart-name-service.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 8 }}
+        {{- end }}
+      labels:
+        app: {{ template "chart-name-service.name" . }}
+        release: {{ .Release.Name }}
+        {{- range $key, $value := .Values.podLabels }}
+        {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- tpl . $ | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- tpl . $ | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: {{ template "chart-name-service.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort.http }}
+              protocol: TCP
+          env: {{ toYaml .Values.env | nindent 12 }} 
+          command: {{- toYaml .Values.command | nindent 12 }} 
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.Probes.enabled }}  
+          livenessProbe: {{ toYaml .Values.Probes.livenessProbe | nindent 12 }}
+          readinessProbe: {{ toYaml .Values.Probes.readinessProbe | nindent 12 }}
+          {{ end }}
+  strategy: 
+    {{ .Values.strategy.type | nindent 4 }}:
+      activeService: {{ .Release.Name }}-{{ .Values.strategy.activeService }}
+      previewService: {{ .Release.Name }}-{{ .Values.strategy.previewService }}
+      {{ toYaml .Values.strategy.settings | nindent 6 }}

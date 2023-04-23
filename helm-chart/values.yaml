@@ -1,0 +1,151 @@
+# Default values for chart-name-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: ${CR}/name-service
+  pullPolicy: IfNotPresent
+  tag: "0"
+
+replicaCount: 1
+revisionHistoryLimit: 5
+
+strategy:
+  type: blueGreen
+  activeService: active
+  previewService: preview
+  settings:  
+    scaleDownDelaySeconds: 5
+#    maxUnavailable:
+#    scaleDownDelaySeconds:
+    previewReplicaCount: 1
+    autoPromotionEnabled: true
+
+containerPort:
+  http: 5000
+  
+service:
+  type: ClusterIP
+  port: 5000
+  targetPort: http
+
+Probes:
+  enabled: false
+  livenessProbe:
+    httpGet:
+      path: "/healthz/live"
+      port: 5000
+      scheme: HTTP
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 5
+  readinessProbe:
+    httpGet:
+      path: "/healthz/ready"
+      port: 5000
+      scheme: HTTP
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 5
+
+
+
+env:
+#  - name: 
+#    value: 
+
+
+ingress:
+  # If `true`, an Ingress is created
+  enabled: true
+  # The name of the Ingress Class associated with this ingress
+  ingressClassName: "nginx"
+  # The Service port targeted by the Ingress
+  servicePort: http
+  # Ingress annotations
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+#   
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true" 
+    kubernetes.io/tls-acme: 'true'
+# 
+  # Additional Ingress labels
+  labels: {}
+  # List of rules for the Ingress
+  rules:
+    -
+      # Ingress host
+      host: example.com
+      # Paths for the host
+      paths:
+        - path: /
+          pathType: Prefix
+  # TLS configuration
+  tls:
+  # prod and dev hosts
+    - hosts:
+        - example.com
+      secretName: "letsencrypt-name-service"
+
+
+resources:
+  requests:
+#    cpu: 10m
+#    memory: 100Mi
+#  limits:
+#    cpu: 100m
+#    memory: 128Mi
+  
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 2
+  memory: 
+    target:
+      type: Utilization
+      averageUtilization: 50
+  cpu: {}
+#    target:
+#      type: Utilization
+#      averageUtilization: 50
+
+
+
+# Topology spread constraints template
+topologySpreadConstraints:
+
+# Node labels for Pod assignment
+nodeSelector: {}
+
+# Node taints to tolerate
+tolerations: []
+
+# Additional Pod labels
+podLabels: {}
+
+#  Pod entrypoint of container
+command: []
+
+# Pod affinity
+affinity: {}
+
+#  Pod priority class name
+priorityClassName: ""  
+
+# Additional Pod annotations
+podAnnotations: {}
+ 
+serviceAccount:
+  # Specifies whether a ServiceAccount should be created
+  create: true
+  # Additional annotations for the ServiceAccount
+  annotations: {}
+  # Additional labels for the ServiceAccount
+  labels: {}
+  # Image pull secrets that are attached to the ServiceAccount
+  imagePullSecrets: []

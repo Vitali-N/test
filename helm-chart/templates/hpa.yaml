@@ -1,0 +1,28 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "chart-name-service.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    name: {{ .Release.Name }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.cpu }}
+    - type: Resource
+      resource:
+        name: cpu
+        target: {{- toYaml .Values.autoscaling.cpu.target | nindent 10 }}
+    {{- end }}
+    {{- if .Values.autoscaling.memory }}
+    - type: Resource
+      resource:
+        name: memory
+        target: {{- toYaml .Values.autoscaling.memory.target | nindent 10 }}
+    {{- end }}
+{{- end }}
